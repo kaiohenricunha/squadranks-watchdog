@@ -1,0 +1,55 @@
+name: Artifact freshness watchdog
+
+# Temporary stand-in for SquadRanks' own "Artifact freshness" workflow, which
+# cannot start while its private repository's GitHub Actions billing is blocked.
+# This repository is public, so its hosted runs use no private-repo quota.
+#
+# Daily at 07:30 UTC (the slot of the original). A failing run is red, so GitHub
+# emails the owner, and it posts the verdict to Sentry when SENTRY_DSN is set.
+# Run it by hand with "selftest" ticked to prove the Sentry path.
+#
+# To remove: delete this repository, or disable this workflow. Nothing in the
+# SquadRanks repository depends on it. See README.md.
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+    inputs:
+      selftest:
+        description: "Post one info event to Sentry to prove the alert path (no freshness check)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Live artifact pointers are fresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Check freshness (alerts Sentry on failure)
+        env:
+          # slug:lifecycle, as in SquadRanks' src/competitions/index.js. Edit
+          # this list when a competition is added or finishes.
+          WATCH: |
+            fifa-world-cup-2026:finished
+            premier-league-2026-27:active
+            brasileirao-serie-a-2026:active
+            la-liga-2026-27:active
+            serie-a-2026-27:active
+            champions-league-2026-27:active
+            bundesliga-2026-27:active
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          HOST: github-actions-watchdog
+          SELFTEST: ${{ inputs.selftest && '1' || '0' }}
+        run: node watchdog.mjs

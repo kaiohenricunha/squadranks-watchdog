@@ -1,0 +1,13 @@
+{
+  "name": "squadranks-watchdog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Temporary external freshness watchdog for the SquadRanks live data artifacts.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
